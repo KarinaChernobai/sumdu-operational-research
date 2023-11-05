@@ -3,7 +3,7 @@
 namespace MathMethods;
 
 // finds minimum of the function
-public static class NedlerMead
+public static class NelderMead
 {
 	public static Point Solve(Func<double, double, double> fn, double eps, (double X, double Y) x, double h)
 	{
