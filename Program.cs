@@ -4,9 +4,9 @@ public class Program
 {
 	static void Main(string[] args)
 	{
-		GradientDescentExample();
-		// GradientDescentExample2();
-		// GradientDescentExample3();
+		TSPexample();
+		TSPexample2();
+		TSPexample3();
 	}
 
 	static void NelderMeadExample()
@@ -50,5 +50,55 @@ public class Program
 		double[] x = {3.0, 3.0};
 		GradientDescent2.Solve(fn, x, alpha, eps);
 		Console.WriteLine($"The minimum is at\n x[0] = {x[0]},\n x[1] = {x[1]},\n fn(x) = {fn(x)}");
+	}
+	// Driver code
+	static void TSPexample()
+	{
+		// Adjacency matrix for the given graph
+		int[,] adj = { { 0, 10, 15, 20 },
+				{ 10, 0, 35, 25 },
+				{ 15, 35, 0, 30 },
+				{ 20, 25, 30, 0 } };
+
+		var (final_res, final_path) = TSP2.SolveTSP(adj);
+
+		Console.WriteLine("Minimum cost : " + final_res);
+		Console.Write("Path Taken : ");
+		for (int i = 0; i < final_path.Length; i++)
+		{
+			Console.Write(final_path[i] + " ");
+		}
+		Console.WriteLine();
+	}
+
+	static void TSPexample2()
+	{
+		// Adjacency matrix for the given graph
+		int[,] adj = { { 0, 5, 11, 9 },
+				{ 10, 0, 8, 7 },
+				{ 7, 14, 0, 8 },
+				{ 12, 6, 15, 0 } };
+
+		var (final_res, final_path) = TSP2.SolveTSP(adj);
+
+		Console.WriteLine("Minimum cost : " + final_res);
+		Console.Write("Path Taken : ");
+		for (int i = 0; i < final_path.Length; i++)
+		{
+			Console.Write(final_path[i] + " ");
+		}
+		Console.WriteLine();
+	}
+
+	static void TSPexample3() 
+	{
+		const double M = Double.NaN;
+		double[,] matrix = { 
+			{ M, 5, 11, 9 },
+			{ 10, M, 8, 7 },
+			{ 7, 14, M, 8 },
+			{ 12, 6, 15, M }
+		};
+		TSP.Solve(matrix);
 	}
 }
