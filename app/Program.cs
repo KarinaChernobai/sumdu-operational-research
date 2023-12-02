@@ -4,8 +4,6 @@ public class Program
 {
 	static void Main(string[] args)
 	{
-		TSPexample();
-		TSPexample2();
 		TSPexample3();
 	}
 
