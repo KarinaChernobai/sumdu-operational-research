@@ -116,4 +116,38 @@ public class Tsp3Test
 		var pathArr = consumer.GetFullPath();
 		WritePath(pathArr, matrix);
 	}
+	[Fact]
+	public void Test3()
+	{
+		var matrix = new double[,]
+		{
+			{ M, 5, 11, 9 },
+			{ 10, M, 8, 7 },
+			{ 7, 14, M, 8 },
+			{ 12, 6, 15, M }
+		};
+		var consumer = new TspResConsumer(_output, matrix);
+		var tsp = new TSP4();
+		tsp.Solve(matrix, consumer, new LogWriter(_output));
+		var pathArr = consumer.GetFullPath();
+		WritePath(pathArr, matrix);
+	}
+	[Fact]
+	public void Test4()
+	{
+		var matrix = new double[,]
+		{
+			{ M,  25, 24, 26, 18, 21 },
+			{ 17, M,  16, 18, 20, 15 },
+			{ 18, 19, M,  19, 22, 20 },
+			{ 28, 25, 20, M,  25, 21 },
+			{ 17, 20, 22, 24, M,  22 },
+			{ 25, 22, 18, 20, 21, M  }
+		};
+		var consumer = new TspResConsumer(_output, matrix);
+		var tsp = new TSP4();
+		tsp.Solve(matrix, consumer, new LogWriter(_output));
+		var pathArr = consumer.GetFullPath();
+		WritePath(pathArr, matrix);
+	}
 }

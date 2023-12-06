@@ -9,71 +9,111 @@ namespace MathMethods;
 
 static class TableWriterExt
 {
-	const char HrBar = '─';
-	const char VrBar = '│';
-	const char Cross = '┼';
 	const char NL = '\n';
 
-	public static void WriteTable(this TextWriter writer, Span2D<string> table)
+	public static void WriteTable(this TextWriter writer, Span2D<string> data, ReadOnlySpan<bool?> hrBorders, ReadOnlySpan<bool> vrBorders)
 	{
-		var columnWidth = new int[table.Width];
-		for (var rowIndex = 0; rowIndex < table.Height; rowIndex++)
+		var columnsWidth = (Span<int>)stackalloc int[data.Width];
+		var context = new Context(writer, data, hrBorders, vrBorders, columnsWidth);
+
+		context.WriteTableRow(0);
+		for (var rowIndex = 1; rowIndex < data.Height; rowIndex++)
 		{
-			var row = table.GetRowSpan(rowIndex);
-			for (var i = 0; i < row.Length; i++)
+			context.WriteHrSeparator(rowIndex-1);
+			context.WriteTableRow(rowIndex);
+		}
+	}
+
+	readonly ref struct Context
+	{
+		const char SHrBar = '─';
+		const char SVrBar = '│';
+		const char DHrBar = '═';
+		const char DVrBar = '║';
+
+		private static readonly char[] _cross = [ '┼', '╫', '╪', '╬' ];
+		private static char Cross(bool hrBorder, bool vrBorder) => _cross[(hrBorder ? 2 : 0) + (vrBorder ? 1 : 0)];
+
+		private readonly TextWriter _writer;
+		private readonly Span2D<string> _data;
+		private readonly ReadOnlySpan<bool?> _hrBorders;
+		private readonly ReadOnlySpan<bool> _vrBorder;
+		private readonly Span<int> _columnsWidth;
+
+		public Context(TextWriter writer, Span2D<string> data, ReadOnlySpan<bool?> hrBorders, ReadOnlySpan<bool> vrBorder, Span<int> columnsWidth)
+		{ 
+			_writer = writer;
+			_data = data;
+			_hrBorders = hrBorders;
+			_vrBorder = vrBorder;
+			_columnsWidth = columnsWidth;
+			CalcColumnWidth();
+		}
+
+		private void CalcColumnWidth()
+		{
+			for (var rowIndex = 0; rowIndex < _data.Height; rowIndex++)
 			{
-				if (row[i] == null) row[i] = string.Empty;
-				else if (columnWidth[i] < row[i].Length) columnWidth[i] = row[i].Length;
+				var row = _data.GetRowSpan(rowIndex);
+				for (var columnIndex = 0; columnIndex < row.Length; columnIndex++)
+				{
+					ref var cell = ref row[columnIndex];
+					if (cell == null) cell = string.Empty;
+					else
+					{
+						ref var width = ref _columnsWidth[columnIndex];
+						if (width < cell.Length) width = cell.Length;
+					}
+				}
 			}
 		}
 
-		writer.WriteTableRow(columnWidth, table.GetRowSpan(0));
-		writer.Write(NL);
-		writer.WriteHrSeparator(columnWidth);
-		writer.Write(NL); 
-		for (var rowIndex = 1; rowIndex < table.Height; rowIndex++)
+		public void WriteTableRow(int rowIndex)
 		{
-			writer.WriteTableRow(columnWidth, table.GetRowSpan(rowIndex));
-			writer.Write(NL);
+			var row = _data.GetRowSpan(rowIndex);
+			{
+				var str = row[0];
+				var d = _columnsWidth[0] - str.Length;
+				WriteSpace(d);
+				_writer.Write(str);
+			}
+			
+			for (var columnIndex = 1; columnIndex < row.Length; columnIndex++)
+			{
+				var i = columnIndex - 1;
+				_writer.Write(i < _vrBorder.Length && _vrBorder[i] ? DVrBar : SVrBar);
+				var str = row[columnIndex];
+				var d = _columnsWidth[columnIndex] - str.Length;
+				WriteSpace(d);
+				_writer.Write(str);
+			}
+			_writer.Write(NL);
 		}
-	}
 
-	private static void WriteTableRow(this TextWriter writer, int[] columnWidth, ReadOnlySpan<string> row)
-	{
+		public void WriteHrSeparator(int rowIndex)
 		{
-			var str = row[0];
-			var d = columnWidth[0] - str.Length;
-			writer.WriteSpace(d);
-			writer.Write(str);
+			if (rowIndex >= _hrBorders.Length) return;
+			if (_hrBorders[rowIndex] is not bool isDHr) return;
+			var hrBorder = isDHr ? DHrBar : SHrBar;
+			WriteHrBar(_columnsWidth[0], hrBorder);
+			for (var columnIndex = 1; columnIndex < _columnsWidth.Length; columnIndex++)
+			{
+				var i = columnIndex - 1;
+				_writer.Write(Cross(isDHr, i < _vrBorder.Length && _vrBorder[i]));
+				WriteHrBar(_columnsWidth[columnIndex], hrBorder);
+			}
+			_writer.Write(NL);
 		}
-		for (var i = 1; i < row.Length; i++)
+
+
+		private void WriteSpace(int length)
 		{
-			writer.Write(VrBar);
-			var str = row[i];
-			var d = columnWidth[i] - str.Length;
-			writer.WriteSpace(d);
-			writer.Write(str);
+			for (; length > 0; length--) _writer.Write(' ');
 		}
-	}
 
-	private static void WriteHrSeparator(this TextWriter writer, int[] columnWidth)
-	{
-
-		writer.WriteHrBar(columnWidth[0]);
-		for (var i = 1; i < columnWidth.Length; i++)
+		private void WriteHrBar(int length, char hrBar)
 		{
-			writer.Write(Cross);
-			writer.WriteHrBar(columnWidth[i]);
+			for (; length > 0; length--) _writer.Write(hrBar);
 		}
-	}
-
-	private static void WriteSpace(this TextWriter writer, int length)
-	{ 
-		for (; length > 0; length--) writer.Write(' ');
-	}
-
-	private static void WriteHrBar(this TextWriter writer, int length)
-	{
-		for (; length > 0; length--) writer.Write(HrBar);
 	}
 }

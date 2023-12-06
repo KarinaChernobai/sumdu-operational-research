@@ -16,12 +16,6 @@ public interface IConsumer<T>
 	void Accept(T value);
 }
 
-public interface ILogWriter
-{
-	TextWriter GetWriter();
-	void EndMessage();
-}
-
 public readonly struct BoolMatrix(int rowCount, int columnCount)
 {
 	private readonly BitArray _array = new BitArray(rowCount * columnCount);
@@ -71,30 +65,12 @@ public ref struct Tsp3
 	const double Eps = 0.000001;
 	const string DoubleFormat = "0.######";
 
-	struct RowStat
+	struct Stat
 	{
 		public double Term;
 		public double Min { get => Term; set => Term = value; }
 		public int MinCount;
 		public double Min2;
-		public int MxIndex;
-		public int NoPathCellCount;
-
-		public void Reset()
-		{
-			Term = double.NaN;
-			MinCount = 0;
-			Min2 = double.NaN;
-			NoPathCellCount = 0;
-		}
-	}
-
-	struct ColumnStat
-	{
-		public double Term;
-		public double Min { get => Term; set => Term = value; }
-		public double Min2;
-		public int MinCount;
 		public int MxIndex;
 		public int NoPathCellCount;
 
@@ -109,13 +85,13 @@ public ref struct Tsp3
 
 	struct StatItem
 	{
-		public RowStat Row;
-		public ColumnStat Column;
+		public Stat Row;
+		public Stat Column;
 	}
 
-	struct Stat
+	struct StatList
 	{
-		public Stat(int size)
+		public StatList(int size)
 		{
 			_rowCount = size;
 			_columnCount = size;
@@ -140,8 +116,8 @@ public ref struct Tsp3
 		private int _columnCount;
 		public readonly int ColumnCount => _columnCount;
 
-		public readonly ref RowStat GetRow(int rowIndex) => ref _list[rowIndex].Row;
-		public readonly ref ColumnStat GetColumn(int columnIndex) => ref _list[columnIndex].Column;
+		public readonly ref Stat GetRow(int rowIndex) => ref _list[rowIndex].Row;
+		public readonly ref Stat GetColumn(int columnIndex) => ref _list[columnIndex].Column;
 
 		public readonly double GetSum(CellCoords coord) => _list[coord.Row].Row.Term + _list[coord.Column].Column.Term;
 
@@ -257,8 +233,8 @@ public ref struct Tsp3
 
 		alg.Log();
 
-		var rowCount = alg._stat.RowCount;
-		var columnCount = alg._stat.ColumnCount;
+		var rowCount = alg._statList.RowCount;
+		var columnCount = alg._statList.ColumnCount;
 
 		for (var iteration = matrix.Width-1; iteration > 0; iteration--)
 		{
@@ -276,21 +252,21 @@ public ref struct Tsp3
 
 			var len = alg._minCellList.Count;
 			var minCoord = alg._minCellList[0];
-			var maxSum = alg._stat.GetSum(minCoord);
+			var maxSum = alg._statList.GetSum(minCoord);
 			for (var i = 1; i < len; i++)
 			{
 				var coord = alg._minCellList[i];
-				var sum = alg._stat.GetSum(coord);
+				var sum = alg._statList.GetSum(coord);
 				if (sum > maxSum)
 				{
 					maxSum = sum;
 					minCoord = coord;
 				}
 			}
-			pathConsumer.Accept(alg._stat.UsePath(minCoord));
+			pathConsumer.Accept(alg._statList.UsePath(minCoord));
 			alg._minCellList.Clear();
-			rowCount = alg._stat.RowCount;
-			columnCount = alg._stat.ColumnCount;
+			rowCount = alg._statList.RowCount;
+			columnCount = alg._statList.ColumnCount;
 			alg.Log();
 		}
 	}
@@ -300,28 +276,28 @@ public ref struct Tsp3
 		_logWriter = logWriter;
 		_mx = matrix;
 		var size = matrix.Width;
-		_stat = new Stat(size);
+		_statList = new StatList(size);
 		_minCellList = new ZeroCellList();
 	}
 
 	private readonly ReadOnlySpan2D<double> _mx;
-	private Stat _stat;
+	private StatList _statList;
 	private ZeroCellList _minCellList;
 	private ILogWriter? _logWriter;
 
 	void ProcessRow(int rowIndex)
 	{
-		var columnCount = _stat.ColumnCount;
-		ref var rowStat = ref _stat.GetRow(rowIndex);
+		var columnCount = _statList.ColumnCount;
+		ref var rowStat = ref _statList.GetRow(rowIndex);
 		var matrixRow = _mx.GetRowSpan(rowStat.MxIndex);
-		var noPathRow = _stat.NoPathMx.GetRow(rowStat.MxIndex);
+		var noPathRow = _statList.NoPathMx.GetRow(rowStat.MxIndex);
 		_minCellList.StartColumnSet(rowIndex);
 
 		var columnIndex = 0;
 		var min = default(double);
 		for (; columnIndex < columnCount; columnIndex++)
 		{
-			ref var columnStat = ref _stat.GetColumn(columnIndex);
+			ref var columnStat = ref _statList.GetColumn(columnIndex);
 			if (!noPathRow[columnStat.MxIndex])
 			{
 				min = matrixRow[columnStat.MxIndex];
@@ -337,7 +313,7 @@ public ref struct Tsp3
 
 		for (; columnIndex < columnCount; columnIndex++)
 		{
-			ref var columnStat = ref _stat.GetColumn(columnIndex);
+			ref var columnStat = ref _statList.GetColumn(columnIndex);
 			if (noPathRow[columnStat.MxIndex])
 			{
 				rowStat.NoPathCellCount++;
@@ -366,7 +342,7 @@ public ref struct Tsp3
 
 		for (columnIndex = 0; columnIndex < columnCount; columnIndex++)
 		{
-			ref var columnStat = ref _stat.GetColumn(columnIndex);
+			ref var columnStat = ref _statList.GetColumn(columnIndex);
 			if (noPathRow[columnStat.MxIndex]) continue;
 			var v = matrixRow[columnStat.MxIndex];
 			v -= min;
@@ -391,15 +367,15 @@ public ref struct Tsp3
 
 	void ProcessColumn(int columnIndex)
 	{
-		ref var columnStat = ref _stat.GetColumn(columnIndex);
+		ref var columnStat = ref _statList.GetColumn(columnIndex);
 		if (columnStat.Min == 0)
 		{
 			columnStat.Term = columnStat.MinCount > 1 ? 0 : columnStat.Min2;
 			return;
 		}
-		var noPathColumn = _stat.NoPathMx.GetColumn(columnStat.MxIndex);
+		var noPathColumn = _statList.NoPathMx.GetColumn(columnStat.MxIndex);
 		_minCellList.StartRowSet(columnIndex);
-		var rowCount = _stat.RowCount;
+		var rowCount = _statList.RowCount;
 		for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
 		{
 			if (noPathColumn.Value)
@@ -408,7 +384,7 @@ public ref struct Tsp3
 				continue;
 			}
 			noPathColumn.MoveToNextRow();
-			ref var rowStat = ref _stat.GetRow(rowIndex);
+			ref var rowStat = ref _statList.GetRow(rowIndex);
 			var v = _mx[rowStat.MxIndex, columnStat.MxIndex];
 			v -= rowStat.Min + columnStat.Min;
 			// v ≈ 0
@@ -423,10 +399,10 @@ public ref struct Tsp3
 
 	void SetRowsTerm()
 	{
-		var rowCount = _stat.RowCount;
+		var rowCount = _statList.RowCount;
 		for (var rowIndex = 0; rowIndex < rowCount; rowIndex++)
 		{
-			ref var rowStat = ref _stat.GetRow(rowIndex);
+			ref var rowStat = ref _statList.GetRow(rowIndex);
 			rowStat.Term = rowStat.MinCount > 1 ? 0 : (rowStat.Min2 - rowStat.Min);
 		}
 	}
@@ -438,26 +414,26 @@ public ref struct Tsp3
 
 	void InitStatIndexMap(scoped Span<StatIndex> map)
 	{
-		var array = (Span<(int statIndex, int mxIndex)>)stackalloc (int statIndex, int mxIndex)[_mx.Width];
+		var array = (Span<(int statIndex, int mxIndex)>)stackalloc (int statIndex, int mxIndex)[map.Length];
 
-		for (var rowIndex = 0; rowIndex < _stat.RowCount; rowIndex++)
+		for (var rowIndex = 0; rowIndex < _statList.RowCount; rowIndex++)
 		{
-			ref var rowStat = ref _stat.GetRow(rowIndex);
+			ref var rowStat = ref _statList.GetRow(rowIndex);
 			array[rowIndex] = (rowIndex, rowStat.MxIndex);
 		}
 		{
-			var span = array.Slice(0, _stat.RowCount);
+			var span = array.Slice(0, _statList.RowCount);
 			span.Sort(static (item1, item2) => item1.mxIndex.CompareTo(item2.mxIndex));
 			for (var i = 0; i < span.Length; i++) map[span[i].statIndex].Row = i;
 		}
 
-		for (var columnIndex = 0; columnIndex < _stat.ColumnCount; columnIndex++)
+		for (var columnIndex = 0; columnIndex < _statList.ColumnCount; columnIndex++)
 		{
-			ref var columnStat = ref _stat.GetColumn(columnIndex);
+			ref var columnStat = ref _statList.GetColumn(columnIndex);
 			array[columnIndex] = (columnIndex, columnStat.MxIndex);
 		}
 		{
-			var span = array.Slice(0, _stat.ColumnCount);
+			var span = array.Slice(0, _statList.ColumnCount);
 			span.Sort(static (item1, item2) => item1.mxIndex.CompareTo(item2.mxIndex));
 			for (var i = 0; i < span.Length; i++) map[span[i].statIndex].Column = i;
 		}
@@ -466,32 +442,38 @@ public ref struct Tsp3
 	void Log()
 	{
 		if (_logWriter == null) return;
-		var table = new string[_stat.RowCount+1, _stat.ColumnCount+1];
-		var map = (Span<StatIndex>)stackalloc StatIndex[_mx.Width];
+		var table = new string[_statList.RowCount+1, _statList.ColumnCount+1];
+		var map = (Span<StatIndex>)stackalloc StatIndex[_statList.RowCount > _statList.ColumnCount ? _statList.RowCount : _statList.ColumnCount];
 		InitStatIndexMap(map);
-		{
-			var tableRow = table.GetRowSpan(0);
-			for (var columnIndex = 0; columnIndex < _stat.ColumnCount; columnIndex++)
-			{
-				ref var columnStat = ref _stat.GetColumn(columnIndex);
-				tableRow[map[columnIndex].Column + 1] = columnStat.MxIndex.ToString();
-			}
-		}
-		for (var rowIndex = 0; rowIndex < _stat.RowCount; rowIndex++)
-		{
-			ref var rowStat = ref _stat.GetRow(rowIndex);
-			var matrixRow = _mx.GetRowSpan(rowStat.MxIndex);
-			var noPathRow = _stat.NoPathMx.GetRow(rowStat.MxIndex);
-			var tableRow = table.GetRowSpan(map[rowIndex].Row+1);
-			table[map[rowIndex].Row + 1, 0] = rowStat.MxIndex.ToString();
-			for (var columnIndex = 0; columnIndex < _stat.ColumnCount; columnIndex++)
-			{
-				ref var columnStat = ref _stat.GetColumn(columnIndex);
-				tableRow[map[columnIndex].Column+1] = noPathRow[columnStat.MxIndex] ? "M" : matrixRow[columnStat.MxIndex].ToString(DoubleFormat);
-			}
-		}
+		FillData(table, map);
 		_logWriter.GetWriter().Write('\n');
-		_logWriter.GetWriter().WriteTable(table);
+		_logWriter.GetWriter().WriteTable(table, [false], []);
 		_logWriter.EndMessage();
+	}
+
+	void FillData(Span2D<string> table, scoped ReadOnlySpan<StatIndex> map)
+	{
+		{
+			var tableRow = table.GetRowSpan(0).Slice(1);
+			for (var columnIndex = 0; columnIndex < _statList.ColumnCount; columnIndex++)
+			{
+				tableRow[map[columnIndex].Column] = _statList.GetColumn(columnIndex).MxIndex.ToString();
+			}
+		}
+		table = table.Slice(1, 0, table.Height - 1, table.Width);
+		for (var rowIndex = 0; rowIndex < _statList.RowCount; rowIndex++)
+		{
+			ref var rowStat = ref _statList.GetRow(rowIndex);
+			var matrixRow = _mx.GetRowSpan(rowStat.MxIndex);
+			var noPathRow = _statList.NoPathMx.GetRow(rowStat.MxIndex);
+			var tableRow = table.GetRowSpan(map[rowIndex].Row);
+			table[map[rowIndex].Row, 0] = rowStat.MxIndex.ToString();
+			tableRow = tableRow.Slice(1);
+			for (var columnIndex = 0; columnIndex < _statList.ColumnCount; columnIndex++)
+			{
+				ref var columnStat = ref _statList.GetColumn(columnIndex);
+				tableRow[map[columnIndex].Column] = noPathRow[columnStat.MxIndex] ? "M" : matrixRow[columnStat.MxIndex].ToString(DoubleFormat);
+			}
+		}
 	}
 }

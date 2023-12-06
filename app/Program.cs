@@ -1,10 +1,14 @@
-﻿namespace MathMethods;
+﻿using System.Reflection.Metadata;
+using System.Text;
+
+namespace MathMethods;
 
 public class Program
 {
 	static void Main(string[] args)
 	{
-		TSPexample3();
+		Console.OutputEncoding = Encoding.UTF8;
+		TSPexample4();
 	}
 
 	static void NelderMeadExample()
@@ -98,5 +102,20 @@ public class Program
 			{ 12, 6, 15, M }
 		};
 		TSP.Solve(matrix);
+	}
+	static void TSPexample4()
+	{
+		const double M = Double.NaN;
+		double[,] matrix = {
+			{ M, 5, 11, 9 },
+			{ 10, M, 8, 7 },
+			{ 7, 14, M, 8 },
+			{ 12, 6, 15, M }
+		};
+		var tsp = new TSP4();
+		var consumer = new TspResConsumer(Console.Out, matrix);
+		tsp.Solve(matrix, consumer, new LogWriter(Console.Out));
+		var pathArr = consumer.GetFullPath();
+		Console.Out.WriteTspPath(pathArr, matrix);
 	}
 }
