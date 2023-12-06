@@ -8,7 +8,7 @@ public class Program
 	static void Main(string[] args)
 	{
 		Console.OutputEncoding = Encoding.UTF8;
-		TSPexample4();
+		TSPexample2();
 	}
 
 	static void NelderMeadExample()
@@ -17,7 +17,6 @@ public class Program
 		var eps = 0.01;
 		var alpha = 0.1;
 		NelderMead.Solve(fn, eps, (3, 3), alpha);
-		// new NedlerMead2().Solve(fn, eps, (3, 3), h);
 	}
 	static void GradientDescentExample()
 	{
@@ -53,57 +52,7 @@ public class Program
 		GradientDescent2.Solve(fn, x, alpha, eps);
 		Console.WriteLine($"The minimum is at\n x[0] = {x[0]},\n x[1] = {x[1]},\n fn(x) = {fn(x)}");
 	}
-	// Driver code
 	static void TSPexample()
-	{
-		// Adjacency matrix for the given graph
-		int[,] adj = { { 0, 10, 15, 20 },
-				{ 10, 0, 35, 25 },
-				{ 15, 35, 0, 30 },
-				{ 20, 25, 30, 0 } };
-
-		var (final_res, final_path) = TSP2.SolveTSP(adj);
-
-		Console.WriteLine("Minimum cost : " + final_res);
-		Console.Write("Path Taken : ");
-		for (int i = 0; i < final_path.Length; i++)
-		{
-			Console.Write(final_path[i] + " ");
-		}
-		Console.WriteLine();
-	}
-
-	static void TSPexample2()
-	{
-		// Adjacency matrix for the given graph
-		int[,] adj = { { 0, 5, 11, 9 },
-				{ 10, 0, 8, 7 },
-				{ 7, 14, 0, 8 },
-				{ 12, 6, 15, 0 } };
-
-		var (final_res, final_path) = TSP2.SolveTSP(adj);
-
-		Console.WriteLine("Minimum cost : " + final_res);
-		Console.Write("Path Taken : ");
-		for (int i = 0; i < final_path.Length; i++)
-		{
-			Console.Write(final_path[i] + " ");
-		}
-		Console.WriteLine();
-	}
-
-	static void TSPexample3() 
-	{
-		const double M = Double.NaN;
-		double[,] matrix = { 
-			{ M, 5, 11, 9 },
-			{ 10, M, 8, 7 },
-			{ 7, 14, M, 8 },
-			{ 12, 6, 15, M }
-		};
-		TSP.Solve(matrix);
-	}
-	static void TSPexample4()
 	{
 		const double M = Double.NaN;
 		double[,] matrix = {
@@ -112,7 +61,26 @@ public class Program
 			{ 7, 14, M, 8 },
 			{ 12, 6, 15, M }
 		};
-		var tsp = new TSP4();
+		var tsp = new TSP();
+		var consumer = new TspResConsumer(Console.Out, matrix);
+		tsp.Solve(matrix, consumer, new LogWriter(Console.Out));
+		var pathArr = consumer.GetFullPath();
+		Console.Out.WriteTspPath(pathArr, matrix);
+	}
+
+	static void TSPexample2()
+	{
+		const double M = Double.NaN;
+		var matrix = new double[,]
+		{
+			{ M,  25, 24, 26, 18, 21 },
+			{ 17, M,  16, 18, 20, 15 },
+			{ 18, 19, M,  19, 22, 20 },
+			{ 28, 25, 20, M,  25, 21 },
+			{ 17, 20, 22, 24, M,  22 },
+			{ 25, 22, 18, 20, 21, M  }
+		};
+		var tsp = new TSP();
 		var consumer = new TspResConsumer(Console.Out, matrix);
 		tsp.Solve(matrix, consumer, new LogWriter(Console.Out));
 		var pathArr = consumer.GetFullPath();

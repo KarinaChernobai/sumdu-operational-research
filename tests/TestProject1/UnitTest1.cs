@@ -93,7 +93,7 @@ public class Tsp3Test
 			{ 12, 6, 15, M }
 		};
 		var consumer = new TspResConsumer(_output, matrix);
-		Tsp3.Solve(matrix, consumer, new LogWriter(_output));
+		TSP2.Solve(matrix, consumer, new LogWriter(_output));
 		_output.WriteLine(string.Empty);
 		var pathArr = consumer.GetFullPath();
 		WritePath(pathArr, matrix);
@@ -111,7 +111,7 @@ public class Tsp3Test
 			{ 25, 22, 18, 20, 21, M  }
 		};
 		var consumer = new TspResConsumer(_output, matrix);
-		Tsp3.Solve(matrix, consumer, new LogWriter(_output));
+		TSP2.Solve(matrix, consumer, new LogWriter(_output));
 		_output.WriteLine(string.Empty);
 		var pathArr = consumer.GetFullPath();
 		WritePath(pathArr, matrix);
@@ -127,7 +127,7 @@ public class Tsp3Test
 			{ 12, 6, 15, M }
 		};
 		var consumer = new TspResConsumer(_output, matrix);
-		var tsp = new TSP4();
+		var tsp = new TSP();
 		tsp.Solve(matrix, consumer, new LogWriter(_output));
 		var pathArr = consumer.GetFullPath();
 		WritePath(pathArr, matrix);
@@ -145,7 +145,7 @@ public class Tsp3Test
 			{ 25, 22, 18, 20, 21, M  }
 		};
 		var consumer = new TspResConsumer(_output, matrix);
-		var tsp = new TSP4();
+		var tsp = new TSP();
 		tsp.Solve(matrix, consumer, new LogWriter(_output));
 		var pathArr = consumer.GetFullPath();
 		WritePath(pathArr, matrix);
