@@ -8,7 +8,11 @@ public class Program
 	static void Main(string[] args)
 	{
 		Console.OutputEncoding = Encoding.UTF8;
-		TSPexample2();
+		// TSPexample2();
+		// SimplexExample();
+		// SimplexExample3();
+		// HanoiExample();
+		BellmanExample();
 	}
 
 	static void NelderMeadExample()
@@ -85,5 +89,67 @@ public class Program
 		tsp.Solve(matrix, consumer, new LogWriter(Console.Out));
 		var pathArr = consumer.GetFullPath();
 		Console.Out.WriteTspPath(pathArr, matrix);
+	}
+
+	static void SimplexExample()
+	{
+		double[] arr = { -1, -1};
+		double[,] matrix = {
+			{ -5,  1, 0 },
+			{  1, -5, 0 },
+			{  1,  1, 6 },
+		};
+		// comparison operator <=
+		var solution = Simplex.Solve(arr, matrix, new LogWriter(Console.Out));
+		Console.WriteLine($"x0: {solution[0]}, x1: {solution[1]}");
+	}
+
+	static void SimplexExample2()
+	{
+		double[] arr = { -3, -2 };
+		double[,] matrix = {
+			{ 2, 1, 18 },
+			{ 2, 3, 42 },
+			{ 3, 1, 24 },
+		};
+		var solution = Simplex.Solve(arr, matrix, new LogWriter(Console.Out));
+		Console.WriteLine($"x0: {solution[0]}, x1: {solution[1]}");
+	}
+
+	static void SimplexExample3()
+	{
+		double[] arr = { -2, -1 };
+		double[,] matrix = {
+			{  6,  4, 24 },
+			{  3, -3, 9  },
+			{ -1,  3, 3  },
+		};
+		// comparison operator <=
+		var solution = Simplex.Solve(arr, matrix, new LogWriter(Console.Out));
+		Console.WriteLine($"x0: {solution[0]}, x1: {solution[1]}");
+	}
+
+	static void HanoiExample()
+	{
+		HanoiTower.Solve(3);
+	}
+
+	static void BellmanExample()
+	{
+		double[] arr = { 0, 1, 2, 3, 4, 5 };
+		double[,] matrix = 
+		{
+			{ 0,   0,   0,  },
+			{ 2.2, 2,   2.8 },
+			{ 3,   3.2, 5.4 },
+			{ 4.1, 4.8, 6.4 },
+			{ 5.2, 6.2, 6.6 },
+			{ 5.9, 6.4, 6.9 },
+		};
+		for (var i = 0d; i <= 12; i+=0.5)
+		{
+			BellmanEq.Solve(arr, matrix, i, new LogWriter(Console.Out));
+			Console.Out.WriteLine();
+		}
 	}
 }
