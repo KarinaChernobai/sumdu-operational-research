@@ -136,8 +136,25 @@ public class Program
 
 	static void BellmanExample()
 	{
-		double[] arr = { 0, 1, 2, 3, 4, 5 };
-		double[,] matrix = 
+		double[] invOptions = { 0, 1, 2, 3, 4, 5 };
+		double[,] samplesMx = 
+		{
+			{ 0,   0,   0,  },
+			{ 0.2, 1,   1.5 },
+			{ 0.6, 1.5, 2.2 },
+			{ 1.5, 2,   3.4 },
+			{ 2.4, 3,   4   },
+			{ 4.4, 4.9, 5.1 },
+		};
+		var invPlan = new int[samplesMx.GetLength(1)];
+		BellmanEq2.Solve(invOptions, samplesMx, invPlan, 5, new LogWriter(Console.Out));
+		Console.Out.WriteLine();
+	}
+
+	static void BellmanExample2()
+	{
+		double[] invOptions = { 0, 1, 2, 3, 4, 5 };
+		double[,] samplesMx =
 		{
 			{ 0,   0,   0,  },
 			{ 2.2, 2,   2.8 },
@@ -146,10 +163,13 @@ public class Program
 			{ 5.2, 6.2, 6.6 },
 			{ 5.9, 6.4, 6.9 },
 		};
-		for (var i = 0d; i <= 12; i+=0.5)
+		var invPlan = new int[samplesMx.GetLength(1)];
+		for (var i = 0d; i < 16; i += 0.5)
 		{
-			BellmanEq.Solve(arr, matrix, i, new LogWriter(Console.Out));
+			BellmanEq.Solve(invOptions, samplesMx, i, new LogWriter(Console.Out));
 			Console.Out.WriteLine();
+			BellmanEq2.Solve(invOptions, samplesMx, invPlan, i, new LogWriter(Console.Out));
+			Console.Out.WriteLine("\n-----------------\n");
 		}
 	}
 }
